@@ -4,10 +4,13 @@
 
 # COMMAND ----------
 
+# MAGIC %run ../utils/env_setup
+
+# COMMAND ----------
+
 # MAGIC %md
-# MAGIC ##1. Consultas analíticas
+# MAGIC ## 1. Consultas analíticas
 # MAGIC Resolver las siguientes consultas analíticas
-# MAGIC
 
 # COMMAND ----------
 
@@ -15,18 +18,67 @@
 # MAGIC ### a. Mejores sucursales
 # MAGIC
 # MAGIC Top-10 de sucursales según monto vendido ordenado de mayor a menor. Debe tener ambas columnas.
-# MAGIC
-# MAGIC
+
+# COMMAND ----------
+
+from pyspark.sql.functions import col, sum as _sum, row_number
+from pyspark.sql.window import Window
+
+df_fact = spark.table(f"{CATALOG}.{GOLD_SCHEMA}.fact_ventas_final")
+df_vendedor = spark.table(f"{CATALOG}.{SILVER_SCHEMA}.dim_vendedor")
+df_producto = spark.table(f"{CATALOG}.{SILVER_SCHEMA}.dim_producto")
+
+# Top-10 sucursales por monto vendido
+df_top_sucursales = df_fact.alias("f").join(
+    df_vendedor.alias("v"),
+    col("f.vendedor") == col("v.Id_vendedor"),
+    "inner"
+).groupBy("sucursal_nombre") \
+ .agg(_sum("monto_total").alias("monto_vendido")) \
+ .orderBy(col("monto_vendido").desc()) \
+ .limit(10)
+
+df_top_sucursales.display()
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ###b. Mejores vendedores con detalle de top 3 de productos
+# MAGIC ### b. Mejores vendedores con detalle de top 3 de productos
 # MAGIC
-# MAGIC - Listado ordenado de mayor a menor con los mejores vendedores por “monto_total”.
+# MAGIC - Listado ordenado de mayor a menor con los mejores vendedores por "monto_total".
 # MAGIC
 # MAGIC - Agregar los 3 productos más vendidos por cada uno con sus cantidades correspondientes.
-# MAGIC
+
+# COMMAND ----------
+
+# Ranking de vendedores por monto total
+df_vendedores_rank = df_fact.alias("f").join(
+    df_vendedor.alias("v"),
+    col("f.vendedor") == col("v.Id_vendedor"),
+    "inner"
+).groupBy("Id_vendedor", "vendedor_nombre") \
+ .agg(_sum("monto_total").alias("monto_total_vendedor")) \
+ .orderBy(col("monto_total_vendedor").desc())
+
+df_vendedores_rank.display()
+
+# COMMAND ----------
+
+# Top 3 productos por vendedor
+df_detalle = df_fact.alias("f").join(
+    df_producto.alias("p"),
+    col("f.sku") == col("p.id_producto"),
+    "inner"
+).groupBy("vendedor", col("p.nombre").alias("producto")) \
+ .agg(_sum("cantidad").alias("cantidad_total"))
+
+w = Window.partitionBy("vendedor").orderBy(col("cantidad_total").desc())
+df_top3_productos = df_detalle.withColumn("rn", row_number().over(w)) \
+    .filter(col("rn") <= 3) \
+    .drop("rn") \
+    .orderBy("vendedor", col("cantidad_total").desc())
+
+df_top3_productos.display()
 
 # COMMAND ----------
 
@@ -37,27 +89,56 @@
 
 # COMMAND ----------
 
+df_peores_sucursales = df_fact.alias("f").join(
+    df_vendedor.alias("v"),
+    col("f.vendedor") == col("v.Id_vendedor"),
+    "inner"
+).groupBy("sucursal_nombre") \
+ .agg(_sum("monto_total").alias("monto_vendido")) \
+ .filter(col("monto_vendido") < 4000000) \
+ .orderBy(col("monto_vendido").asc())
+
+df_peores_sucursales.display()
+
+# COMMAND ----------
+
 # MAGIC %md
 # MAGIC ## 2. Delta time travel
 # MAGIC
 # MAGIC ### a. Consultar el historial de versiones de la tabla
-# MAGIC
-# MAGIC
+
+# COMMAND ----------
+
+spark.sql(f"DESCRIBE HISTORY {CATALOG}.{GOLD_SCHEMA}.fact_ventas_final").display()
 
 # COMMAND ----------
 
 # MAGIC %md
 # MAGIC
-# MAGIC ###b. Restaurar la tabla a la versión original (0)
+# MAGIC ### b. Restaurar la tabla a la versión original (0)
+
+# COMMAND ----------
+
+spark.sql(f"RESTORE TABLE {CATALOG}.{GOLD_SCHEMA}.fact_ventas_final TO VERSION AS OF 0")
+print("Tabla restaurada a la version 0.")
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ##3.Contestá la pregunta
+# MAGIC ## 3. Contestá la pregunta
 # MAGIC Una fecha de entrega de una tarea que tenés asignada se está acercando y, salvo un milagro, no vas a llegar: ¿Qué hacés?
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ##4. Cuál es el área de la siguiente figura:
+# MAGIC **Respuesta:**
+# MAGIC
+# MAGIC Lo primero es comunicar el riesgo cuanto antes. Informo a mi lider directo y al equipo sobre el estado real del avance, explico las causas del retraso (complejidad subestimada, dependencia bloqueante, etc.) y propongo alternativas concretas: un alcance reducido que entregue el valor critico en la fecha acordada, o una nueva fecha realista con el alcance completo.
+# MAGIC
+# MAGIC Nunca espero al ultimo momento ni entrego algo incompleto sin contexto. La transparencia temprana permite al equipo tomar decisiones informadas y reasignar prioridades si es necesario.
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## 4. Cuál es el área de la siguiente figura:
 # MAGIC ![](/Volumes/workspace/default/test_volume/figura.png)

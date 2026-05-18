@@ -35,3 +35,8 @@ Cada desarrollo se realiza en su propia rama (ej. `feat/01-bronze-ingestion`) an
 - **Agregaciones y Calculos:** Creacion de la tabla `fact_ventas_final` calculando `monto_total` a partir del cruce con `dim_producto`.
 - **Particionamiento:** Guardado de la tabla en formato Delta particionada nativamente por `mes`.
 - **DML (Data Manipulation Language):** Uso de comandos SQL estandar sobre Delta Lake para correccion de datos (`DELETE` para truncar la particion de diciembre, y `UPDATE` para aplicar descuento en junio).
+
+## Desarrollo: Analytics (`04_analytics.py`)
+
+- **Consultas Analiticas:** Top-10 sucursales por monto vendido, ranking de vendedores con top 3 productos por cantidad, y deteccion de sucursales con monto inferior a $4.000.000.
+- **Delta Time Travel:** Consulta del historial de versiones con `DESCRIBE HISTORY` y restauracion a la version original con `RESTORE TABLE ... TO VERSION AS OF 0`.
