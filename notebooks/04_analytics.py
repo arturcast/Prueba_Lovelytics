@@ -146,11 +146,14 @@ print("Tabla restaurada a la version 0.")
 # MAGIC %md
 # MAGIC **Respuesta:**
 # MAGIC
-# MAGIC Encerré la figura en un rectangulo de 13 x 9 = 117 u² y resté las zonas vacias:
+# MAGIC - El rectangulo central mide 6 x 3 = 18 u²
+# MAGIC - Triangulo superior mide (5 x 1)/2 = 2.5 u²
+# MAGIC - Triangulo inferior mide (6 x 2)/2 = 6 u²
+# MAGIC - Tirangulo izquiero mide (2 x 3)/2 = 3 u²
 # MAGIC
-# MAGIC - Triangulo superior izquierdo (la diagonal): ~12.5 u²
-# MAGIC - Triangulo inferior izquierdo (la diagonal): ~10 u²
-# MAGIC - Muesca superior derecha: ~1 u²
-# MAGIC - Muesca inferior izquierda: ~4 u²
+# MAGIC Area = 18 + 2.5 + 6 + 3 = **29.5 u²**
 # MAGIC
-# MAGIC Area aprox = 117 - 12.5 - 10 - 1 - 4 = **89.5 u²**
+# MAGIC Investigando se podría aplicar la fórmula del área de Gauss (Shoelace formula) en python.
+# MAGIC
+# MAGIC 1. Habría que identificar los vertices, la forma sencilla sería identificar los vertices y escribirlos directamente o por medio de una librería de procesamiento de imagenes encontrar la forma de identificarlos automaticamente. Es importante que los vertices deben ir en orden en sentido horario
+# MAGIC 2. Los vertices son (2,2),(7,1),(7,2),(8,2),(8,5),(2,7),(2,5),(0,5)
