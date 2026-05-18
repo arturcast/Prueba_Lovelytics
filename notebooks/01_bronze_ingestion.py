@@ -1,5 +1,6 @@
-L# Databricks notebook source
+# Databricks notebook source
 # MAGIC %md
+# MAGIC # Databricks notebook source
 # MAGIC
 # MAGIC # Bronze Zone
 # MAGIC
@@ -89,8 +90,9 @@ for file_csv, table_delta in archivos_tablas.items():
     filas = ingest_csv_to_bronze(file_csv, table_delta)
     print(f"{table_delta} ingestada con {filas} registros.\n")
 
-# COMMAND ----------# MAGIC %md
-# MAGIC
+# COMMAND ----------
+
+# MAGIC %md
 # MAGIC ## 2. Validación capa bronze
 # MAGIC
 # MAGIC Validar con una consulta que se hayan cargado correctamente todos los registros de cada uno de los archivos.
