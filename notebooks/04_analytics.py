@@ -51,7 +51,7 @@ df_top_sucursales.display()
 
 # COMMAND ----------
 
-# Ranking de vendedores por monto total
+# Ranking de vendedores
 df_vendedores_rank = df_fact.alias("f").join(
     df_vendedor.alias("v"),
     col("f.vendedor") == col("v.Id_vendedor"),
@@ -133,9 +133,7 @@ print("Tabla restaurada a la version 0.")
 # MAGIC %md
 # MAGIC **Respuesta:**
 # MAGIC
-# MAGIC Lo primero es comunicar el riesgo cuanto antes. Informo a mi lider directo y al equipo sobre el estado real del avance, explico las causas del retraso (complejidad subestimada, dependencia bloqueante, etc.) y propongo alternativas concretas: un alcance reducido que entregue el valor critico en la fecha acordada, o una nueva fecha realista con el alcance completo.
-# MAGIC
-# MAGIC Nunca espero al ultimo momento ni entrego algo incompleto sin contexto. La transparencia temprana permite al equipo tomar decisiones informadas y reasignar prioridades si es necesario.
+# MAGIC Comunico el riesgo lo antes posible al lider y al equipo, explico las causas del retraso y propongo alternativas: entregar un alcance reducido en la fecha pactada o negociar una nueva fecha con el alcance completo. Lo peor que se puede hacer es quedarse callado hasta el ultimo dia.
 
 # COMMAND ----------
 

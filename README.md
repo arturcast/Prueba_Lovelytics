@@ -1,42 +1,39 @@
 # Prueba Técnica Lovelytics - Databricks
 
-Este repositorio contiene la solución al DataChallenge de Databricks.
+Solucion al DataChallenge de Databricks.
 
-## Arquitectura y Configuración
+## Configuracion
 
-### 1. Parametrización y Entornos Dinámicos
-El código utiliza el catálogo `workspace` y el esquema `bronze`. Para soportar múltiples entornos, se implementaron Databricks Widgets en el script `utils/env_setup.py`. Esto permite inyectar el catálogo y esquema de forma dinámica.
+Se utilizan Databricks Widgets (`utils/env_setup.py`) para parametrizar catalogo y esquemas, permitiendo cambiar entre entornos sin modificar codigo.
 
-### 2. Estructura del Repositorio
-- `notebooks/`: Contiene los notebooks principales del flujo.
-- `utils/`: Módulos compartidos, como `env_setup.py`.
+### Estructura
+- `notebooks/`: Notebooks del flujo (01 a 04).
+- `utils/`: Modulos compartidos.
 
-### 3. Estrategia de Ramas
-Cada desarrollo se realiza en su propia rama (ej. `feat/01-bronze-ingestion`) antes de integrarse.
+### Ramas
+Cada paso se desarrollo en su propia rama (`feat/01-bronze-ingestion`, `feat/02-silver-transformation`, etc.).
 
 ---
 
-## Desarrollo: Capa Bronze (`01_bronze_ingestion.py`)
+## Bronze (`01_bronze_ingestion.py`)
 
-- **Deteccion Dinamica de Delimitadores:** Se usa la funcion `detect_delimiter()` para inferir el delimitador (`,` o `;`) leyendo la primera linea del archivo. Esto evita errores como `[DELTA_INVALID_CHARACTERS_IN_COLUMN_NAMES]`.
-- **Ingesta:** Iteracion de archivos mediante diccionario.
-- **Metadatos:** Columnas de auditoria `bronze_ingestion_timestamp` y `source_file_path`.
-- **Validaciones:** Impresion del esquema inferido y total de registros.
+- Deteccion automatica de delimitador (`,` o `;`) leyendo la primera linea del archivo.
+- Carga de 4 CSVs a tablas Delta con columnas de auditoria.
+- Validacion de esquema y conteo por tabla.
 
-## Desarrollo: Capa Silver (`02_silver_transformation.py`)
+## Silver (`02_silver_transformation.py`)
 
-- **Validacion de Datos:** Se identifican registros huerfanos usando joins `left_anti` para validar la integridad referencial antes del cruce final.
-- **Dimensiones:** Creacion de `dim_vendedor` cruzando empleados y locales, y `dim_producto`.
-- **Manejo de Ambigüedad:** En cruces complejos, se asignaron alias a los DataFrames (`f`, `p`, `v`) para evitar el error `[AMBIGUOUS_REFERENCE]` al operar sobre columnas compartidas.
-- **Tabla de Hechos:** Creacion de `fact_ventas` aplicando un `INNER JOIN` con las dimensiones para descartar transacciones sin referencias validas, garantizando la integridad. Parseo del campo `timestamp` en `dia`, `mes`, `ano`.
+- Validacion de integridad referencial con `left_anti` joins.
+- Creacion de `dim_vendedor` (cruce empleados + locales) y `dim_producto`.
+- Creacion de `fact_ventas` con INNER JOIN y separacion de fecha en `dia`, `mes`, `ano`.
 
-## Desarrollo: Capa Gold (`03_gold_aggregations.py`)
+## Gold (`03_gold_aggregations.py`)
 
-- **Agregaciones y Calculos:** Creacion de la tabla `fact_ventas_final` calculando `monto_total` a partir del cruce con `dim_producto`.
-- **Particionamiento:** Guardado de la tabla en formato Delta particionada nativamente por `mes`.
-- **DML (Data Manipulation Language):** Uso de comandos SQL estandar sobre Delta Lake para correccion de datos (`DELETE` para truncar la particion de diciembre, y `UPDATE` para aplicar descuento en junio).
+- Calculo de `monto_total = cantidad * precio_unitario`.
+- Tabla `fact_ventas_final` particionada por `mes`.
+- DELETE de la particion de diciembre y UPDATE con descuento del 10% en junio.
 
-## Desarrollo: Analytics (`04_analytics.py`)
+## Analytics (`04_analytics.py`)
 
-- **Consultas Analiticas:** Top-10 sucursales por monto vendido, ranking de vendedores con top 3 productos por cantidad, y deteccion de sucursales con monto inferior a $4.000.000.
-- **Delta Time Travel:** Consulta del historial de versiones con `DESCRIBE HISTORY` y restauracion a la version original con `RESTORE TABLE ... TO VERSION AS OF 0`.
+- Top-10 sucursales, ranking de vendedores con top 3 productos, sucursales con monto < $4M.
+- Delta Time Travel: historial de versiones y restauracion a version 0.

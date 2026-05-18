@@ -37,10 +37,7 @@ from pyspark.sql.functions import current_timestamp, col
 spark.sql(f"CREATE SCHEMA IF NOT EXISTS {CATALOG}.{BRONZE_SCHEMA}")
 
 def detect_delimiter(file_path):
-    """
-    Detecta dinamicamente si el archivo usa coma (,) o punto y coma (;)
-    leyendo la primera linea. Evita errores de parsing.
-    """
+    """Lee la primera linea del archivo y determina si usa ',' o ';'."""
     try:
         with open(file_path, 'r', encoding='utf-8') as f:
             first_line = f.readline()
@@ -50,16 +47,13 @@ def detect_delimiter(file_path):
         return ','
 
 def ingest_csv_to_bronze(file_name, table_name):
-    """
-    Ingesta archivos CSV a la capa Bronze.
-    Agrega metadatos de auditoria y detecta delimitadores dinamicamente.
-    """
+    """Carga un CSV a una tabla Delta en Bronze con columnas de auditoria."""
     file_path = f"{VOLUME_PATH}/{file_name}"
     
     delimiter = detect_delimiter(file_path)
     print(f"Procesando {file_name} (Delimitador detectado: '{delimiter}')...")
     
-    # Lectura del CSV infiriendo esquema
+    # Lectura CSV
     df = (spark.read
           .format("csv")
           .option("header", "true")
@@ -67,11 +61,11 @@ def ingest_csv_to_bronze(file_name, table_name):
           .option("inferSchema", "true")
           .load(file_path))
     
-    # Agregar columnas de auditoría
+    # Columnas de auditoria
     df_bronze = df.withColumn("bronze_ingestion_timestamp", current_timestamp()) \
                   .withColumn("source_file_path", col("_metadata.file_path"))
     
-    # Escritura en Delta Lake
+    # Escritura en Delta
     full_table_name = f"{CATALOG}.{BRONZE_SCHEMA}.{table_name}"
     df_bronze.write.format("delta").mode("overwrite").saveAsTable(full_table_name)
     
@@ -85,7 +79,7 @@ archivos_tablas = {
     "fact.csv": "raw_fact"
 }
 
-# Ejecutar ingesta para todos los archivos
+# Ejecutar ingesta
 for file_csv, table_delta in archivos_tablas.items():
     filas = ingest_csv_to_bronze(file_csv, table_delta)
     print(f"{table_delta} ingestada con {filas} registros.\n")
@@ -105,29 +99,27 @@ for file_csv, table_delta in archivos_tablas.items():
 # COMMAND ----------
 
 def validate_bronze_table(table_name):
-    """
-    Valida la tabla Bronze cargada.
-    """
+    """Imprime esquema, conteo y muestra de la tabla."""
     full_table_name = f"{CATALOG}.{BRONZE_SCHEMA}.{table_name}"
     
-    # 1. Verificar si la tabla existe y obtener total de registros
+    # Conteo
     count_df = spark.sql(f"SELECT COUNT(1) AS total_registros FROM {full_table_name}")
     total = count_df.collect()[0]["total_registros"]
     
-    # 2. Obtener esquema de la tabla
+    # Esquema
     schema_info = spark.table(full_table_name).schema.simpleString()
     
-    print(f"Reporte de Validacion: {full_table_name}")
+    print(f"Tabla: {full_table_name}")
     print("-" * 50)
     print(f"Total Registros: {total}")
     print(f"Esquema inferido: {schema_info}")
     
     if total == 0:
-        print("WARNING: La tabla esta vacia.")
+        print("ALERTA: Tabla vacia.")
     else:
-        print("Validacion exitosa.")
+        print("OK.")
         
-    # Muestra preliminar de datos
+    # Muestra
     display(spark.sql(f"SELECT * FROM {full_table_name} LIMIT 3"))
     print("\n")
 

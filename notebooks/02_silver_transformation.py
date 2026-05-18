@@ -25,7 +25,7 @@ df_raw_locales = spark.table(f"{CATALOG}.{BRONZE_SCHEMA}.raw_locales")
 df_raw_productos = spark.table(f"{CATALOG}.{BRONZE_SCHEMA}.raw_productos")
 df_raw_fact = spark.table(f"{CATALOG}.{BRONZE_SCHEMA}.raw_fact")
 
-# Validacion de integridad referencial: Contar registros sin dimension (huerfanos)
+# Validacion de integridad referencial
 orphans_empleados = df_raw_empleados.join(df_raw_locales, df_raw_empleados["sucursal"] == df_raw_locales["id_sucursal"], "left_anti")
 print(f"Empleados con sucursal inexistente: {orphans_empleados.count()}")
 
@@ -96,7 +96,7 @@ print("dim_producto guardada en Silver.")
 
 # COMMAND ----------
 
-# Asegurar integridad referencial con INNER JOIN usando alias para evitar columnas ambiguas
+# Integridad referencial con INNER JOIN (alias para evitar columnas ambiguas)
 df_fact_ventas = df_raw_fact.alias("f").join(
     df_dim_producto.alias("p"),
     col("f.sku") == col("p.id_producto"),
@@ -107,14 +107,14 @@ df_fact_ventas = df_raw_fact.alias("f").join(
     "inner"
 )
 
-# Parseo de fecha (la columna original se llama 'timestamp')
+# Separar fecha
 df_fact_ventas = df_fact_ventas.withColumn("dia", dayofmonth(col("f.timestamp"))) \
     .withColumn("mes", month(col("f.timestamp"))) \
     .withColumn("ano", year(col("f.timestamp")))
 
-# Seleccionar campos requeridos de la fact table original mas las fechas separadas
+# Seleccionar columnas de la fact + campos de fecha
 cols_fact = [col(f"f.{c}") for c in df_raw_fact.columns] + [col("dia"), col("mes"), col("ano")]
 df_fact_ventas_final = df_fact_ventas.select(*cols_fact)
 
 df_fact_ventas_final.write.format("delta").mode("overwrite").saveAsTable(f"{CATALOG}.{SILVER_SCHEMA}.fact_ventas")
-print("fact_ventas guardada en Silver con integridad referencial.")
+print("fact_ventas guardada en Silver.")

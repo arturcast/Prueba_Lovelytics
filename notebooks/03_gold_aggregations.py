@@ -29,8 +29,7 @@ spark.sql(f"CREATE SCHEMA IF NOT EXISTS {CATALOG}.{GOLD_SCHEMA}")
 df_fact_ventas = spark.table(f"{CATALOG}.{SILVER_SCHEMA}.fact_ventas")
 df_dim_producto = spark.table(f"{CATALOG}.{SILVER_SCHEMA}.dim_producto")
 
-# Cruzar para obtener precio_unitario y calcular monto_total
-# Usamos alias para evitar colisiones
+# Cruzar con dim_producto para obtener precio_unitario
 df_fact_ventas_final = df_fact_ventas.alias("f").join(
     df_dim_producto.alias("p"),
     col("f.sku") == col("p.id_producto"),
@@ -39,11 +38,10 @@ df_fact_ventas_final = df_fact_ventas.alias("f").join(
     "monto_total", col("f.cantidad") * col("p.precio_unitario")
 )
 
-# Seleccionar columnas necesarias. Se mantiene toda la fact mas el monto_total
-# Usamos f.* para traer todas las de fact_ventas y el nuevo monto_total
+# Seleccionar columnas de la fact + monto_total
 df_fact_ventas_final = df_fact_ventas_final.select("f.*", "monto_total")
 
-# Escribir la tabla particionada por 'mes'
+# Escritura particionada
 df_fact_ventas_final.write.format("delta") \
     .mode("overwrite") \
     .partitionBy("mes") \
@@ -61,8 +59,7 @@ print("fact_ventas_final guardada en Gold y particionada por mes.")
 
 # COMMAND ----------
 
-# Ejecutar DML sobre Delta Lake
-# La forma nativa y robusta de vaciar una particion en Delta es usar DELETE
+# Truncar particion de diciembre
 spark.sql(f"DELETE FROM {CATALOG}.{GOLD_SCHEMA}.fact_ventas_final WHERE mes = 12")
 print("Particion de diciembre truncada (mes = 12).")
 
@@ -74,7 +71,7 @@ print("Particion de diciembre truncada (mes = 12).")
 
 # COMMAND ----------
 
-# Ejecutar DML de actualizacion sobre Delta Lake
+# Descuento del 10% en junio
 spark.sql(f"UPDATE {CATALOG}.{GOLD_SCHEMA}.fact_ventas_final SET monto_total = monto_total * 0.9 WHERE mes = 6")
 print("Descuento del 10% aplicado a la particion de junio (mes = 6).")
 
