@@ -18,6 +18,7 @@ Cada desarrollo se realiza en su propia rama (ej. `feat/01-bronze-ingestion`) an
 
 ## Desarrollo: Capa Bronze (`01_bronze_ingestion.py`)
 
-- **Ingesta:** Se iteran los archivos sobre un diccionario mapeando origen y destino.
+- **Detección Dinámica de Delimitadores:** Los archivos CSV suelen mezclar delimitadores (ej. `,` vs `;`). Si Databricks intenta leer un archivo separado por `;` utilizando `,` por defecto, arroja el error `[DELTA_INVALID_CHARACTERS_IN_COLUMN_NAMES]`. Para evitar mapeos manuales por archivo (anti-patrón), se implementó la función `detect_delimiter()` que lee la primera línea del archivo desde el volumen de Unity Catalog e infiere estadísticamente el delimitador a utilizar. Esto permite procesar fuentes con formatos mixtos de forma resiliente y estandarizada.
+- **Ingesta:** Se iteran los archivos sobre un diccionario base.
 - **Metadatos:** Se agregan las columnas `bronze_ingestion_timestamp` y `source_file_path`.
 - **Validaciones:** Se incluye una función de validación que imprime el esquema inferido, el total de registros y alertas de tablas vacías.

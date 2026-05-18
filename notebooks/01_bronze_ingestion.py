@@ -1,4 +1,4 @@
-# Databricks notebook source
+L# Databricks notebook source
 # MAGIC %md
 # MAGIC
 # MAGIC # Bronze Zone
@@ -35,13 +35,28 @@ from pyspark.sql.functions import current_timestamp, col
 # Crear esquema
 spark.sql(f"CREATE SCHEMA IF NOT EXISTS {CATALOG}.{SCHEMA}")
 
-def ingest_csv_to_bronze(file_name, table_name, delimiter=","):
+def detect_delimiter(file_path):
+    """
+    Detecta dinamicamente si el archivo usa coma (,) o punto y coma (;)
+    leyendo la primera linea. Evita errores de parsing.
+    """
+    try:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            first_line = f.readline()
+            return ';' if first_line.count(';') > first_line.count(',') else ','
+    except Exception as e:
+        print(f"Error detectando delimitador: {e}. Usando ',' por defecto.")
+        return ','
+
+def ingest_csv_to_bronze(file_name, table_name):
     """
     Ingesta archivos CSV a la capa Bronze.
-    Agrega metadatos de auditoria.
+    Agrega metadatos de auditoria y detecta delimitadores dinamicamente.
     """
     file_path = f"{VOLUME_PATH}/{file_name}"
-    print(f"Procesando {file_name}...")
+    
+    delimiter = detect_delimiter(file_path)
+    print(f"Procesando {file_name} (Delimitador detectado: '{delimiter}')...")
     
     # Lectura del CSV infiriendo esquema
     df = (spark.read
@@ -61,18 +76,18 @@ def ingest_csv_to_bronze(file_name, table_name, delimiter=","):
     
     return df_bronze.count()
 
-# Mapeo de archivos a tablas con su separador
+# Mapeo de archivos a tablas
 archivos_tablas = {
-    "empleados.csv": {"table": "raw_empleados", "sep": ","},
-    "locales.csv": {"table": "raw_locales", "sep": ";"},
-    "producto.csv": {"table": "raw_productos", "sep": ","},
-    "fact.csv": {"table": "raw_fact", "sep": ","}
+    "empleados.csv": "raw_empleados",
+    "locales.csv": "raw_locales",
+    "producto.csv": "raw_productos",
+    "fact.csv": "raw_fact"
 }
 
 # Ejecutar ingesta para todos los archivos
-for file_csv, config in archivos_tablas.items():
-    filas = ingest_csv_to_bronze(file_csv, config["table"], config["sep"])
-    print(f"{config['table']} ingestada con {filas} registros.\n")
+for file_csv, table_delta in archivos_tablas.items():
+    filas = ingest_csv_to_bronze(file_csv, table_delta)
+    print(f"{table_delta} ingestada con {filas} registros.\n")
 
 # COMMAND ----------# MAGIC %md
 # MAGIC
@@ -115,5 +130,5 @@ def validate_bronze_table(table_name):
     print("\n")
 
 # Validar todas las tablas
-for config in archivos_tablas.values():
-    validate_bronze_table(config["table"])
+for table in archivos_tablas.values():
+    validate_bronze_table(table)
