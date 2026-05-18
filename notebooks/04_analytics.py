@@ -146,10 +146,11 @@ print("Tabla restaurada a la version 0.")
 # MAGIC %md
 # MAGIC **Respuesta:**
 # MAGIC
-# MAGIC Ubique los vertices de la figura sobre la cuadricula (cada cuadrado = 1u) y aplique la formula de Gauss (Shoelace).
+# MAGIC Encerré la figura en un rectangulo de 13 x 9 = 117 u² y resté las zonas vacias:
 # MAGIC
-# MAGIC Vertices: (0,5), (5,10), (12,10), (12,9), (13,9), (13,1), (5,1), (5,3), (3,3), (3,1)
+# MAGIC - Triangulo superior izquierdo (la diagonal): ~12.5 u²
+# MAGIC - Triangulo inferior izquierdo (la diagonal): ~10 u²
+# MAGIC - Muesca superior derecha: ~1 u²
+# MAGIC - Muesca inferior izquierda: ~4 u²
 # MAGIC
-# MAGIC Area = 0.5 * |(-25) + (-70) + (-12) + (-9) + (-104) + 8 + 10 + 6 + (-6) + 15|
-# MAGIC
-# MAGIC **Area = 93.5 u²**
+# MAGIC Area aprox = 117 - 12.5 - 10 - 1 - 4 = **89.5 u²**
