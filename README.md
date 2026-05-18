@@ -27,4 +27,5 @@ Cada desarrollo se realiza en su propia rama (ej. `feat/01-bronze-ingestion`) an
 
 - **Validacion de Datos:** Se identifican registros huerfanos usando joins `left_anti` para validar la integridad referencial antes del cruce final.
 - **Dimensiones:** Creacion de `dim_vendedor` cruzando empleados y locales, y `dim_producto`.
-- **Tabla de Hechos:** Creacion de `fact_ventas` aplicando un `INNER JOIN` con las dimensiones para descartar transacciones sin referencias validas, garantizando la integridad. Parseo del campo fecha en `dia`, `mes`, `ano`.
+- **Manejo de Ambigüedad:** En cruces complejos, se asignaron alias a los DataFrames (`f`, `p`, `v`) para evitar el error `[AMBIGUOUS_REFERENCE]` al operar sobre columnas compartidas.
+- **Tabla de Hechos:** Creacion de `fact_ventas` aplicando un `INNER JOIN` con las dimensiones para descartar transacciones sin referencias validas, garantizando la integridad. Parseo del campo `timestamp` en `dia`, `mes`, `ano`.
