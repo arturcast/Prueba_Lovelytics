@@ -140,3 +140,16 @@ print("Tabla restaurada a la version 0.")
 # MAGIC %md
 # MAGIC ## 4. Cuál es el área de la siguiente figura:
 # MAGIC ![](/Volumes/workspace/default/test_volume/figura.png)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC **Respuesta:**
+# MAGIC
+# MAGIC Ubique los vertices de la figura sobre la cuadricula (cada cuadrado = 1u) y aplique la formula de Gauss (Shoelace).
+# MAGIC
+# MAGIC Vertices: (0,5), (5,10), (12,10), (12,9), (13,9), (13,1), (5,1), (5,3), (3,3), (3,1)
+# MAGIC
+# MAGIC Area = 0.5 * |(-25) + (-70) + (-12) + (-9) + (-104) + 8 + 10 + 6 + (-6) + 15|
+# MAGIC
+# MAGIC **Area = 93.5 u²**
