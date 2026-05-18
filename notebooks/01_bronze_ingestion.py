@@ -33,7 +33,7 @@ L# Databricks notebook source
 from pyspark.sql.functions import current_timestamp, col
 
 # Crear esquema
-spark.sql(f"CREATE SCHEMA IF NOT EXISTS {CATALOG}.{SCHEMA}")
+spark.sql(f"CREATE SCHEMA IF NOT EXISTS {CATALOG}.{BRONZE_SCHEMA}")
 
 def detect_delimiter(file_path):
     """
@@ -71,7 +71,7 @@ def ingest_csv_to_bronze(file_name, table_name):
                   .withColumn("source_file_path", col("_metadata.file_path"))
     
     # Escritura en Delta Lake
-    full_table_name = f"{CATALOG}.{SCHEMA}.{table_name}"
+    full_table_name = f"{CATALOG}.{BRONZE_SCHEMA}.{table_name}"
     df_bronze.write.format("delta").mode("overwrite").saveAsTable(full_table_name)
     
     return df_bronze.count()
@@ -106,7 +106,7 @@ def validate_bronze_table(table_name):
     """
     Valida la tabla Bronze cargada.
     """
-    full_table_name = f"{CATALOG}.{SCHEMA}.{table_name}"
+    full_table_name = f"{CATALOG}.{BRONZE_SCHEMA}.{table_name}"
     
     # 1. Verificar si la tabla existe y obtener total de registros
     count_df = spark.sql(f"SELECT COUNT(1) AS total_registros FROM {full_table_name}")

@@ -18,7 +18,13 @@ Cada desarrollo se realiza en su propia rama (ej. `feat/01-bronze-ingestion`) an
 
 ## Desarrollo: Capa Bronze (`01_bronze_ingestion.py`)
 
-- **Detección Dinámica de Delimitadores:** Los archivos CSV suelen mezclar delimitadores (ej. `,` vs `;`). Si Databricks intenta leer un archivo separado por `;` utilizando `,` por defecto, arroja el error `[DELTA_INVALID_CHARACTERS_IN_COLUMN_NAMES]`. Para evitar mapeos manuales por archivo (anti-patrón), se implementó la función `detect_delimiter()` que lee la primera línea del archivo desde el volumen de Unity Catalog e infiere estadísticamente el delimitador a utilizar. Esto permite procesar fuentes con formatos mixtos de forma resiliente y estandarizada.
-- **Ingesta:** Se iteran los archivos sobre un diccionario base.
-- **Metadatos:** Se agregan las columnas `bronze_ingestion_timestamp` y `source_file_path`.
-- **Validaciones:** Se incluye una función de validación que imprime el esquema inferido, el total de registros y alertas de tablas vacías.
+- **Deteccion Dinamica de Delimitadores:** Se usa la funcion `detect_delimiter()` para inferir el delimitador (`,` o `;`) leyendo la primera linea del archivo. Esto evita errores como `[DELTA_INVALID_CHARACTERS_IN_COLUMN_NAMES]`.
+- **Ingesta:** Iteracion de archivos mediante diccionario.
+- **Metadatos:** Columnas de auditoria `bronze_ingestion_timestamp` y `source_file_path`.
+- **Validaciones:** Impresion del esquema inferido y total de registros.
+
+## Desarrollo: Capa Silver (`02_silver_transformation.py`)
+
+- **Validacion de Datos:** Se identifican registros huerfanos usando joins `left_anti` para validar la integridad referencial antes del cruce final.
+- **Dimensiones:** Creacion de `dim_vendedor` cruzando empleados y locales, y `dim_producto`.
+- **Tabla de Hechos:** Creacion de `fact_ventas` aplicando un `INNER JOIN` con las dimensiones para descartar transacciones sin referencias validas, garantizando la integridad. Parseo del campo fecha en `dia`, `mes`, `ano`.
