@@ -140,3 +140,17 @@ print("Tabla restaurada a la version 0.")
 # MAGIC %md
 # MAGIC ## 4. Cuál es el área de la siguiente figura:
 # MAGIC ![](/Volumes/workspace/default/test_volume/figura.png)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC **Respuesta:**
+# MAGIC
+# MAGIC Encerré la figura en un rectangulo de 13 x 9 = 117 u² y resté las zonas vacias:
+# MAGIC
+# MAGIC - Triangulo superior izquierdo (la diagonal): ~12.5 u²
+# MAGIC - Triangulo inferior izquierdo (la diagonal): ~10 u²
+# MAGIC - Muesca superior derecha: ~1 u²
+# MAGIC - Muesca inferior izquierda: ~4 u²
+# MAGIC
+# MAGIC Area aprox = 117 - 12.5 - 10 - 1 - 4 = **89.5 u²**
