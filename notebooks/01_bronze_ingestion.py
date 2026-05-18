@@ -30,7 +30,7 @@
 
 # COMMAND ----------
 
-from pyspark.sql.functions import current_timestamp, input_file_name
+from pyspark.sql.functions import current_timestamp, col
 
 # Crear esquema
 spark.sql(f"CREATE SCHEMA IF NOT EXISTS {CATALOG}.{SCHEMA}")
@@ -52,7 +52,7 @@ def ingest_csv_to_bronze(file_name, table_name):
     
     # Agregar columnas de auditoría
     df_bronze = df.withColumn("bronze_ingestion_timestamp", current_timestamp()) \
-                  .withColumn("source_file_path", input_file_name())
+                  .withColumn("source_file_path", col("_metadata.file_path"))
     
     # Escritura en Delta Lake
     full_table_name = f"{CATALOG}.{SCHEMA}.{table_name}"
@@ -62,7 +62,7 @@ def ingest_csv_to_bronze(file_name, table_name):
 
 # Mapeo de archivos a tablas
 archivos_tablas = {
-    "Empleados.csv": "raw_empleados",
+    "empleado.csv": "raw_empleados",
     "locales.csv": "raw_locales",
     "producto.csv": "raw_productos",
     "fact.csv": "raw_fact"
