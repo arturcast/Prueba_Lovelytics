@@ -29,3 +29,9 @@ Cada desarrollo se realiza en su propia rama (ej. `feat/01-bronze-ingestion`) an
 - **Dimensiones:** Creacion de `dim_vendedor` cruzando empleados y locales, y `dim_producto`.
 - **Manejo de Ambigüedad:** En cruces complejos, se asignaron alias a los DataFrames (`f`, `p`, `v`) para evitar el error `[AMBIGUOUS_REFERENCE]` al operar sobre columnas compartidas.
 - **Tabla de Hechos:** Creacion de `fact_ventas` aplicando un `INNER JOIN` con las dimensiones para descartar transacciones sin referencias validas, garantizando la integridad. Parseo del campo `timestamp` en `dia`, `mes`, `ano`.
+
+## Desarrollo: Capa Gold (`03_gold_aggregations.py`)
+
+- **Agregaciones y Calculos:** Creacion de la tabla `fact_ventas_final` calculando `monto_total` a partir del cruce con `dim_producto`.
+- **Particionamiento:** Guardado de la tabla en formato Delta particionada nativamente por `mes`.
+- **DML (Data Manipulation Language):** Uso de comandos SQL estandar sobre Delta Lake para correccion de datos (`DELETE` para truncar la particion de diciembre, y `UPDATE` para aplicar descuento en junio).
