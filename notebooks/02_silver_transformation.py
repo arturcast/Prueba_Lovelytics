@@ -29,7 +29,7 @@ df_raw_fact = spark.table(f"{CATALOG}.{BRONZE_SCHEMA}.raw_fact")
 orphans_empleados = df_raw_empleados.join(df_raw_locales, df_raw_empleados["sucursal"] == df_raw_locales["id_sucursal"], "left_anti")
 print(f"Empleados con sucursal inexistente: {orphans_empleados.count()}")
 
-orphans_ventas_prod = df_raw_fact.join(df_raw_productos, df_raw_fact["SKU"] == df_raw_productos["id_producto"], "left_anti")
+orphans_ventas_prod = df_raw_fact.join(df_raw_productos, df_raw_fact["sku"] == df_raw_productos["id_producto"], "left_anti")
 print(f"Ventas con SKU inexistente: {orphans_ventas_prod.count()}")
 
 orphans_ventas_vend = df_raw_fact.join(df_raw_empleados, df_raw_fact["vendedor"] == df_raw_empleados["id_vendedor"], "left_anti")
@@ -99,7 +99,7 @@ print("dim_producto guardada en Silver.")
 # Asegurar integridad referencial con INNER JOIN
 df_fact_ventas = df_raw_fact.join(
     df_dim_producto,
-    df_raw_fact["SKU"] == df_dim_producto["id_producto"],
+    df_raw_fact["sku"] == df_dim_producto["id_producto"],
     "inner"
 ).join(
     df_dim_vendedor,
@@ -107,12 +107,10 @@ df_fact_ventas = df_raw_fact.join(
     "inner"
 )
 
-# Parseo de fecha
-df_fact_ventas = df_fact_ventas.withColumn("fecha_dt", to_date(col("fecha"))) \
-    .withColumn("dia", dayofmonth(col("fecha_dt"))) \
-    .withColumn("mes", month(col("fecha_dt"))) \
-    .withColumn("ano", year(col("fecha_dt"))) \
-    .drop("fecha_dt")
+# Parseo de fecha (la columna original se llama 'timestamp')
+df_fact_ventas = df_fact_ventas.withColumn("dia", dayofmonth(col("timestamp"))) \
+    .withColumn("mes", month(col("timestamp"))) \
+    .withColumn("ano", year(col("timestamp")))
 
 # Seleccionar campos requeridos de la fact table original mas las fechas separadas
 cols_fact = [c for c in df_raw_fact.columns] + ["dia", "mes", "ano"]
