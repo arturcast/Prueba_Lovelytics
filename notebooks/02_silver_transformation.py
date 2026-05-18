@@ -96,24 +96,24 @@ print("dim_producto guardada en Silver.")
 
 # COMMAND ----------
 
-# Asegurar integridad referencial con INNER JOIN
-df_fact_ventas = df_raw_fact.join(
-    df_dim_producto,
-    df_raw_fact["sku"] == df_dim_producto["id_producto"],
+# Asegurar integridad referencial con INNER JOIN usando alias para evitar columnas ambiguas
+df_fact_ventas = df_raw_fact.alias("f").join(
+    df_dim_producto.alias("p"),
+    col("f.sku") == col("p.id_producto"),
     "inner"
 ).join(
-    df_dim_vendedor,
-    df_raw_fact["vendedor"] == df_dim_vendedor["Id_vendedor"],
+    df_dim_vendedor.alias("v"),
+    col("f.vendedor") == col("v.Id_vendedor"),
     "inner"
 )
 
 # Parseo de fecha (la columna original se llama 'timestamp')
-df_fact_ventas = df_fact_ventas.withColumn("dia", dayofmonth(col("timestamp"))) \
-    .withColumn("mes", month(col("timestamp"))) \
-    .withColumn("ano", year(col("timestamp")))
+df_fact_ventas = df_fact_ventas.withColumn("dia", dayofmonth(col("f.timestamp"))) \
+    .withColumn("mes", month(col("f.timestamp"))) \
+    .withColumn("ano", year(col("f.timestamp")))
 
 # Seleccionar campos requeridos de la fact table original mas las fechas separadas
-cols_fact = [c for c in df_raw_fact.columns] + ["dia", "mes", "ano"]
+cols_fact = [col(f"f.{c}") for c in df_raw_fact.columns] + [col("dia"), col("mes"), col("ano")]
 df_fact_ventas_final = df_fact_ventas.select(*cols_fact)
 
 df_fact_ventas_final.write.format("delta").mode("overwrite").saveAsTable(f"{CATALOG}.{SILVER_SCHEMA}.fact_ventas")
