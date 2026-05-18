@@ -32,7 +32,7 @@ print(f"Empleados con sucursal inexistente: {orphans_empleados.count()}")
 orphans_ventas_prod = df_raw_fact.join(df_raw_productos, df_raw_fact["SKU"] == df_raw_productos["id_producto"], "left_anti")
 print(f"Ventas con SKU inexistente: {orphans_ventas_prod.count()}")
 
-orphans_ventas_vend = df_raw_fact.join(df_raw_empleados, df_raw_fact["vendedor"] == df_raw_empleados["id_empleado"], "left_anti")
+orphans_ventas_vend = df_raw_fact.join(df_raw_empleados, df_raw_fact["vendedor"] == df_raw_empleados["id_vendedor"], "left_anti")
 print(f"Ventas con vendedor inexistente: {orphans_ventas_vend.count()}")
 
 # COMMAND ----------
@@ -68,7 +68,7 @@ df_dim_vendedor = df_raw_empleados.join(
     df_raw_empleados["sucursal"] == df_raw_locales["id_sucursal"],
     "inner"
 ).select(
-    df_raw_empleados["id_empleado"].alias("Id_vendedor"),
+    df_raw_empleados["id_vendedor"].alias("Id_vendedor"),
     df_raw_empleados["nombre"].alias("vendedor_nombre"),
     df_raw_locales["nombre"].alias("sucursal_nombre"),
     df_raw_locales["tipo"].alias("region") 
