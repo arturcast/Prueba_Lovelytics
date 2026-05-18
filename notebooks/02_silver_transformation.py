@@ -13,6 +13,30 @@
 
 # COMMAND ----------
 
+# MAGIC %run ../utils/env_setup
+
+# COMMAND ----------
+
+from pyspark.sql.functions import col, year, month, dayofmonth, to_date
+
+# Cargar tablas Bronze
+df_raw_empleados = spark.table(f"{CATALOG}.{BRONZE_SCHEMA}.raw_empleados")
+df_raw_locales = spark.table(f"{CATALOG}.{BRONZE_SCHEMA}.raw_locales")
+df_raw_productos = spark.table(f"{CATALOG}.{BRONZE_SCHEMA}.raw_productos")
+df_raw_fact = spark.table(f"{CATALOG}.{BRONZE_SCHEMA}.raw_fact")
+
+# Validacion de integridad referencial
+orphans_empleados = df_raw_empleados.join(df_raw_locales, df_raw_empleados["sucursal"] == df_raw_locales["id_sucursal"], "left_anti")
+print(f"Empleados con sucursal inexistente: {orphans_empleados.count()}")
+
+orphans_ventas_prod = df_raw_fact.join(df_raw_productos, df_raw_fact["sku"] == df_raw_productos["id_producto"], "left_anti")
+print(f"Ventas con SKU inexistente: {orphans_ventas_prod.count()}")
+
+orphans_ventas_vend = df_raw_fact.join(df_raw_empleados, df_raw_fact["vendedor"] == df_raw_empleados["id_vendedor"], "left_anti")
+print(f"Ventas con vendedor inexistente: {orphans_ventas_vend.count()}")
+
+# COMMAND ----------
+
 # MAGIC %md
 # MAGIC ##2. Esquema y tablas
 # MAGIC
@@ -35,6 +59,31 @@
 
 # COMMAND ----------
 
+# Crear esquema Silver
+spark.sql(f"CREATE SCHEMA IF NOT EXISTS {CATALOG}.{SILVER_SCHEMA}")
+
+# a) dim_vendedor
+df_dim_vendedor = df_raw_empleados.join(
+    df_raw_locales,
+    df_raw_empleados["sucursal"] == df_raw_locales["id_sucursal"],
+    "inner"
+).select(
+    df_raw_empleados["id_vendedor"].alias("Id_vendedor"),
+    df_raw_empleados["nombre"].alias("vendedor_nombre"),
+    df_raw_locales["nombre"].alias("sucursal_nombre"),
+    df_raw_locales["tipo"].alias("region") 
+)
+
+df_dim_vendedor.write.format("delta").mode("overwrite").saveAsTable(f"{CATALOG}.{SILVER_SCHEMA}.dim_vendedor")
+print("dim_vendedor guardada en Silver.")
+
+# b) dim_producto
+df_dim_producto = df_raw_productos
+df_dim_producto.write.format("delta").mode("overwrite").saveAsTable(f"{CATALOG}.{SILVER_SCHEMA}.dim_producto")
+print("dim_producto guardada en Silver.")
+
+# COMMAND ----------
+
 # MAGIC %md
 # MAGIC
 # MAGIC ## 3. Tabla de hechos
@@ -44,3 +93,28 @@
 # MAGIC a) Integridad referencial entre la Fact y las dimensiones.
 # MAGIC
 # MAGIC b) Separar la fecha en los campos: dia, mes, ano
+
+# COMMAND ----------
+
+# Integridad referencial con INNER JOIN (alias para evitar columnas ambiguas)
+df_fact_ventas = df_raw_fact.alias("f").join(
+    df_dim_producto.alias("p"),
+    col("f.sku") == col("p.id_producto"),
+    "inner"
+).join(
+    df_dim_vendedor.alias("v"),
+    col("f.vendedor") == col("v.Id_vendedor"),
+    "inner"
+)
+
+# Separar fecha
+df_fact_ventas = df_fact_ventas.withColumn("dia", dayofmonth(col("f.timestamp"))) \
+    .withColumn("mes", month(col("f.timestamp"))) \
+    .withColumn("ano", year(col("f.timestamp")))
+
+# Seleccionar columnas de la fact + campos de fecha
+cols_fact = [col(f"f.{c}") for c in df_raw_fact.columns] + [col("dia"), col("mes"), col("ano")]
+df_fact_ventas_final = df_fact_ventas.select(*cols_fact)
+
+df_fact_ventas_final.write.format("delta").mode("overwrite").saveAsTable(f"{CATALOG}.{SILVER_SCHEMA}.fact_ventas")
+print("fact_ventas guardada en Silver.")
