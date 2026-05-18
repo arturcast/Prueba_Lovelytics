@@ -35,7 +35,7 @@ from pyspark.sql.functions import current_timestamp, col
 # Crear esquema
 spark.sql(f"CREATE SCHEMA IF NOT EXISTS {CATALOG}.{SCHEMA}")
 
-def ingest_csv_to_bronze(file_name, table_name):
+def ingest_csv_to_bronze(file_name, table_name, delimiter=","):
     """
     Ingesta archivos CSV a la capa Bronze.
     Agrega metadatos de auditoria.
@@ -47,6 +47,7 @@ def ingest_csv_to_bronze(file_name, table_name):
     df = (spark.read
           .format("csv")
           .option("header", "true")
+          .option("delimiter", delimiter)
           .option("inferSchema", "true")
           .load(file_path))
     
@@ -60,18 +61,18 @@ def ingest_csv_to_bronze(file_name, table_name):
     
     return df_bronze.count()
 
-# Mapeo de archivos a tablas
+# Mapeo de archivos a tablas con su separador
 archivos_tablas = {
-    "empleado.csv": "raw_empleados",
-    "locales.csv": "raw_locales",
-    "producto.csv": "raw_productos",
-    "fact.csv": "raw_fact"
+    "empleados.csv": {"table": "raw_empleados", "sep": ","},
+    "locales.csv": {"table": "raw_locales", "sep": ";"},
+    "producto.csv": {"table": "raw_productos", "sep": ","},
+    "fact.csv": {"table": "raw_fact", "sep": ","}
 }
 
 # Ejecutar ingesta para todos los archivos
-for file_csv, table_delta in archivos_tablas.items():
-    filas = ingest_csv_to_bronze(file_csv, table_delta)
-    print(f"{table_delta} ingestada con {filas} registros.\n")
+for file_csv, config in archivos_tablas.items():
+    filas = ingest_csv_to_bronze(file_csv, config["table"], config["sep"])
+    print(f"{config['table']} ingestada con {filas} registros.\n")
 
 # COMMAND ----------# MAGIC %md
 # MAGIC
@@ -114,5 +115,5 @@ def validate_bronze_table(table_name):
     print("\n")
 
 # Validar todas las tablas
-for table in archivos_tablas.values():
-    validate_bronze_table(table)
+for config in archivos_tablas.values():
+    validate_bronze_table(config["table"])
